@@ -1,0 +1,9 @@
+.vscode/
+__pycache__/
+datasets/
+runs/
+
+icdar2003.zip
+
+yolo11n.pt
+yolo11m.pt

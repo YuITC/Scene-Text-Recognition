@@ -1,0 +1,18 @@
+streamlit
+fastapi==0.115.6
+ray[serve]==2.40.0
+python-multipart==0.0.20
+pydantic==2.10.1
+
+requests==2.32.3
+gdown
+
+pygments
+pexpect
+
+opencv-python-headless==4.10.0.84
+ultralytics==8.3.51
+scikit-learn
+timm
+
+# conda install pytorch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 pytorch-cuda=12.4 -c pytorch -c nvidia
