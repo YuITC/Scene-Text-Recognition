@@ -1,51 +1,76 @@
 # Scene Text Recognition (STR)
 
-This **Scene Text Recognition** project focuses on **detecting** and **recognizing** text in images, commonly known as **OCR** (**Optical Character Recognition**). The project leverages **YOLO** for text detection and a **CRNN model** (CNN + RNN + CTC Loss) for text recognition.
 
-This document provides a detailed explanation of the pipeline, including data preparation, model training, evaluation, and deployment using **Ray** + **FastAPI**.
+## 📌 Project Overview
+
+This repository contains a complete **Scene Text Recognition (STR)** pipeline that integrates **YOLOv11m** for text detection and **CRNN** for text recognition. The system efficiently detects and recognizes text in natural scene images using deep learning models.
+
+### Pipeline Overview
+
+**1. Text Detection**
+- Utilizes **YOLOv11m** to identify text regions in images.
+- Returns bounding boxes along with confidence scores.
+
+**2. Text Recognition**
+- Employs **CRNN** (Convolutional Recurrent Neural Network) to recognize text from detected regions.
+- Uses **CTC Loss** for sequence prediction.
+
+**3. End-to-End OCR System**
+- Combines detection and recognition into a fully functional pipeline.
+- Outputs structured text predictions.
+
+![STR Pipeline](assets/pipeline.png)
+
+### Deployment
+
+**1. Web Interface**: Built with **Streamlit** for an interactive user experience.
+
+**2. API Service**: Powered by **FastAPI** and **Ray Serve** for scalable, high-performance OCR processing.
+
+<p align="center">
+  <img src="assets/demo1.png" width="49%">
+  <img src="assets/demo2.png" width="49%">
+</p>
 
 
-## 1. Main Objectives & Pipeline
+## 🚀 Key Features
 
-![alt text](image-1.png)
+- **State-of-the-art models**: Uses **YOLOv11m** for detection and **CRNN with ResNet34 backbone** for recognition.
+- **Optimized for real-world datasets**: Trained and fine-tuned on **ICDAR2003** dataset.
+- **Scalable deployment**: Web-based interface with **Streamlit**, **FastAPI**, and **Ray Serve**.
+- **GPU acceleration**: Fully optimized for Kaggle’s **T4 GPU (16GB)** for efficient training and inference.
+- **Modular design**: Easily extendable and integrable into other OCR applications.
 
-- **Text Detection**: Identifies bounding boxes of words (or phrases) within an image.
-- **Text Recognition**: Decodes text content from each bounding box.
-- **Inference Deployment**: Provides an API endpoint (via FastAPI + Ray) and a Streamlit interface to allow users to upload images or specify image URLs for OCR.
 
-## 2. Project Structure and Main Files
 
-Below is the folder structure, along with an overview of each file’s role:
+## 📂 Project Structure
+
 ```bash
-Scene-Text-Recognition
-├── STR-phase-1-detection.ipynb    # Train text detection model
-├── STR-phase-2-recognition.ipynb  # Train text recognition model
-├── STR-phase-3-inference.ipynb    # Full pipeline inference (detection + recognition)
-├── deployment
-│   ├── object_detection.py        # YOLO-based text detection API (FastAPI)
-│   ├── crnn.py                    # CRNN model
-│   ├── ocr.py                     # Full OCR service (Detection + Recognition)
-│   ├── app.py                     # Streamlit-based UI
-│   ├── Makefile                   # Deployment scripts
-│   └── __init__.py
-└── weights
-    ├── best.pt                    # Trained YOLO weights
-    └── ocr_crnn.pt                # Trained CRNN weights
+Scene-Text-Recognition/
+│── .streamlit/                # Streamlit configuration files
+│── deployment/
+│   ├── app.py                 # Streamlit web application
+│   ├── crnn.py                # CRNN model implementation
+│   ├── object_detection.py    # FastAPI service for text detection (YOLOv11m)
+│   ├── ocr.py                 # FastAPI service for full OCR pipeline
+│   ├── Makefile               # Deployment configurations for Ray Serve
+│── weights/                   # Pretrained weights (YOLOv11m and CRNN)
+│── phase1_detection.ipynb     # Notebook for training text detection
+│── phase2_recognition.ipynb   # Notebook for training text recognition
+│── phase3_full.ipynb          # Notebook integrating the full pipeline
+│── requirements.txt           # Dependencies and libraries
+│── LICENSE
+│── README.md                  # Project documentation
+# P          R      mAP50 (1)
+# 0.881      0.905      0.925 (train)
+# 0.881      0.905      0.925 (val)
 ```
 
-## 3. Installation
 
-To run this project, you will need:
+## 🛠 Installation & Usage
 
-- Python 3.10
-- CUDA (if using GPU)
-- Required libraries from `requirements.txt`
-
+**Install dependencies**:
 ```bash
-# Set up a virtual environment
-python -m venv env
-source env/bin/activate
-
 # Install PyTorch (Optional: GPU Support)
 # https://pytorch.org/get-started/previous-versions/
 conda install pytorch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 pytorch-cuda=12.4 -c pytorch -c nvidia
@@ -54,26 +79,35 @@ conda install pytorch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 pytorch-cuda=
 pip install -r requirements.txt
 ```
 
-## 4. Usage
-
-**Note**: Make sure your device has the **make** command installed. If not, you can use Git Bash or get it from [here](https://www.mingw-w64.org/).
+**Deploy app**:
 
 ```bash
+# Note: If your device doesn't have `make` command, you can use Git Bash instead
+
 # Initialize the environment
 cd deployment
 make init
 
 # Start OCR service (Ray + FastAPI)
+cd deployment
 make deploy_ocr
 
 # Launch Streamlit app for UI-based inference
+cd deployment
 make streamlit
 ```
 
-## 5. Others
 
-- This project is assigned by AIO course from AI VIET NAM and completed by student.
-- This project is licensed under the [Apache License](LICENSE).
-- For any questions or feedback, please open an issue or contact:
-    - Study Email: lehuuphuoc2502yuitc@gmail.com
-    - Main Email: tainguyenphu2502@gmail.com
+## 📜 License
+This project is licensed under the MIT License – feel free to modify and distribute it as needed.
+
+## 🤝 Acknowledgments
+
+This project was assigned by the AIO course from [AI VIET NAM](https://www.facebook.com/aivietnam.edu.vn) and completed by me as a participant of the course.
+
+If you find this project useful, consider ⭐️ starring the repository or contributing to further improvements!
+
+## 📬 Contact
+For any questions or collaboration opportunities, feel free to reach out:
+
+📧 Email: tainguyenphu2502@gmail.com

@@ -1,13 +1,12 @@
 import os
 import tempfile
-from io import BytesIO
-
 import numpy as np
+from PIL import Image
+from io import BytesIO
+from ray import serve
 import requests
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import Response
-from PIL import Image
-from ray import serve
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 
@@ -29,12 +28,10 @@ class APIIngress:
                 temp_file_path = temp_file.name
 
             # Request detection results using the temp file path
-            bboxes, classes, names, confs = await self.handle.detect.remote(
-                temp_file_path
-            )
+            bboxes, classes, names, confs = await self.handle.detect.remote(temp_file_path)
 
             # Open the image from the temp file
-            image = Image.open(temp_file_path)
+            image       = Image.open(temp_file_path)
             image_array = np.array(image)
 
             # Initialize Annotator
@@ -42,13 +39,13 @@ class APIIngress:
 
             # Draw boxes and labels
             for box, cls, conf in zip(bboxes, classes, confs):
-                c = int(cls)
+                c     = int(cls)
                 label = f"{names[c]} {conf:.2f}"
                 annotator.box_label(box, label, color=colors(c, True))
 
             # Convert annotated image back to bytes
             annotated_image = Image.fromarray(annotator.result())
-            file_stream = BytesIO()
+            file_stream     = BytesIO()
             annotated_image.save(file_stream, format="PNG")
             file_stream.seek(0)
 
@@ -67,6 +64,7 @@ class APIIngress:
             response = requests.get(image_url)
             response.raise_for_status()
             return await self.process_image(response.content)
+        
         except requests.RequestException as e:
             raise HTTPException(status_code=400, detail=f"Error downloading image: {e}")
 
@@ -83,9 +81,7 @@ class APIIngress:
             return await self.process_image(content)
 
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Error processing uploaded file: {e}"
-            )
+            raise HTTPException(status_code=500, detail=f"Error processing uploaded file: {e}")
 
 
 @serve.deployment(
@@ -94,7 +90,7 @@ class APIIngress:
 )
 class ObjectDetection:
     def __init__(self):
-        self.model = YOLO("yolo11n.pt")
+        self.model = YOLO("yolo11m.pt")
 
     def detect(self, image_path: str):
         try:

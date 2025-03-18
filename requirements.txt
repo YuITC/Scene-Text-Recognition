@@ -1,17 +1,17 @@
 streamlit
 fastapi==0.115.6
 ray[serve]==2.40.0
-python-multipart==0.0.20
-pydantic==2.10.1
+python-multipart
+pydantic
 
-requests==2.32.3
+requests
 gdown
 
 pygments
 pexpect
 
-opencv-python-headless==4.10.0.84
-ultralytics==8.3.51
+opencv-python-headless
+ultralytics
 scikit-learn
 timm
 

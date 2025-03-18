@@ -1,34 +1,33 @@
 import os
 import tempfile
-from io import BytesIO
-
 import numpy as np
+from io import BytesIO
 import requests
-import torch
-from crnn import CRNN
+from ray import serve
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from PIL import Image
-from ray import serve
+import torch
 from torchvision import transforms
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
+from crnn import CRNN
 
 app = FastAPI()
 
 # Constants
-TEXT_DET_MODEL_PATH = "../runs/detect/train/weights/best.pt"
-OCR_MODEL_PATH = "../ocr_crnn.pt"
+TEXT_DET_MODEL_PATH = "../weights/best.pt"
+OCR_MODEL_PATH      = "../weights/ocr_crnn.pt"
 
 # Character set configuration
-CHARS = "0123456789abcdefghijklmnopqrstuvwxyz-"
+CHARS       = "0123456789abcdefghijklmnopqrstuvwxyz-"
 CHAR_TO_IDX = {char: idx + 1 for idx, char in enumerate(sorted(CHARS))}
 IDX_TO_CHAR = {idx: char for char, idx in CHAR_TO_IDX.items()}
 
 # Model configuration
-HIDDEN_SIZE = 256
-N_LAYERS = 3
-DROPOUT_PROB = 0.2
+HIDDEN_SIZE     = 256
+N_LAYERS        = 3
+DROPOUT_PROB    = 0.2
 UNFREEZE_LAYERS = 3
 
 
@@ -51,9 +50,7 @@ class APIIngress:
 
             # Load the image and draw predictions
             image = Image.open(temp_file_path)
-            annotated_image = await self.handle.draw_predictions.remote(
-                image, predictions
-            )
+            annotated_image = await self.handle.draw_predictions.remote(image, predictions)
 
             # Convert annotated image to bytes
             file_stream = BytesIO()
@@ -107,14 +104,12 @@ class OCRService:
         self.det_model = det_model.to(self.device)
 
         # Define transform for inference
-        self.transform = transforms.Compose(
-            [
-                transforms.Resize((100, 420)),
-                transforms.Grayscale(num_output_channels=1),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,)),
-            ]
-        )
+        self.transform = transforms.Compose([
+            transforms.Resize((100, 420)),
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),
+        ])
 
     def text_detection(self, img_path):
         """Detect text regions in the image"""
@@ -142,15 +137,15 @@ class OCRService:
 
             # Load image
             img = Image.open(img_path)
-            predictions = []
-
+            
             # Process each detection
+            predictions = []
             for bbox, cls_idx, conf in zip(bboxes, classes, confs):
                 x1, y1, x2, y2 = bbox
                 name = names[int(cls_idx)]
 
                 # Crop and recognize text
-                cropped_image = img.crop((x1, y1, x2, y2))
+                cropped_image    = img.crop((x1, y1, x2, y2))
                 transcribed_text = self.text_recognition(cropped_image)
                 predictions.append((bbox, name, conf, transcribed_text[0]))
 
@@ -161,34 +156,18 @@ class OCRService:
 
     def draw_predictions(self, image, predictions):
         """Draw predictions on the image using Ultralytics Annotator"""
-        # Convert PIL Image to numpy array
+
         image_array = np.array(image)
-
-        # Initialize Annotator
-        annotator = Annotator(image_array, font="Arial.ttf", pil=False)
-
-        # Sort predictions by y-coordinate to handle overlapping better
-        predictions = sorted(
-            predictions, key=lambda x: x[0][1]
-        )  # Sort by y1 coordinate
+        annotator   = Annotator(image_array, font="Arial.ttf", pil=False)
+        predictions = sorted(predictions, key=lambda x: x[0][1])  # Sort by y1 coordinate
 
         for bbox, class_name, confidence, text in predictions:
-            # Convert bbox coordinates to integers
             x1, y1, x2, y2 = [int(coord) for coord in bbox]
 
-            # Get color based on class name
-            # color = colors(hash(class_name) % 20, True)
-            # color = (255, 0, 0)
+            color = colors(hash(class_name) % 20, True) # Get color based on class name
+            label = f"{class_name[:3]}{confidence:.1f}:{text}"
+            annotator.box_label([x1, y1, x2, y2], label, color=color, txt_color=(255, 255, 255))
 
-            # Create more compact label
-            label = f"{class_name[:3]}{confidence:.1f}:{text}"  # Shortened format
-
-            # Draw box and label with offset
-            # Place label above the box with small offset
-            annotator.box_label([x1, y1, x2, y2], label, color=(255, 0, 0), txt_color=(0, 0, 0))
-
-
-        # Convert back to PIL Image
         return Image.fromarray(annotator.result())
 
     def decode(self, encoded_sequences, idx_to_char, blank_char="-"):
@@ -196,26 +175,25 @@ class OCRService:
 
         for seq in encoded_sequences:
             decoded_label = []
-            prev_char = None  # To track the previous character
+            prev_char = None
 
             for token in seq:
                 if token != 0:  # Ignore padding (token = 0)
                     char = idx_to_char[token.item()]
-                    # Append the character if it's not a blank or the same as the previous character
-                    if char != blank_char:
+                    
+                    if char != blank_char: # Append the character if it's not a blank or the same as the previous character
                         if char != prev_char or prev_char == blank_char:
                             decoded_label.append(char)
-                    prev_char = char  # Update previous character
-
+                    prev_char = char
             decoded_sequences.append("".join(decoded_label))
 
         return decoded_sequences
 
 
-# ----------------  Initialize YOLO model
+# ---------------- Initialize YOLO model ----------------
 det_model = YOLO(TEXT_DET_MODEL_PATH)
 
-# ----------------  Initialize CRNN model
+# ---------------- Initialize CRNN model ----------------
 reg_model = CRNN(
     vocab_size=len(CHARS),
     hidden_size=HIDDEN_SIZE,
@@ -226,7 +204,7 @@ reg_model = CRNN(
 reg_model.load_state_dict(torch.load(OCR_MODEL_PATH))
 reg_model.eval()
 
-# ----------------  Create the service
+# ---------------- Create the service ----------------
 entrypoint = APIIngress.bind(
     OCRService.bind(
         reg_model=reg_model,
