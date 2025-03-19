@@ -69,6 +69,11 @@ Scene-Text-Recognition/
 
 ## 🛠 Installation & Usage
 
+**Important Notice**:
+This project is built using FastAPI and Ray Serve. To access the Streamlit web app, you must **clone this repository and start the server first** before running the Streamlit interface.
+
+⚠️ **Directly accessing the provided URL will not work** because the backend server must be running locally.
+
 **Install dependencies**:
 ```bash
 # Install PyTorch (Optional: GPU Support)
